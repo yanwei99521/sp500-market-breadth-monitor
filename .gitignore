@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Database (too large, users should run init_data.py)
+backend/stock.db
+
+# Logs
+logs/
+*.log
+
+# Claude Code
+.claude/
+
+# IDE
+.idea/
+.vscode/
+*.swp
