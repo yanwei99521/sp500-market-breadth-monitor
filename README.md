@@ -5,11 +5,11 @@
 ## 快速启动
 
 ```bash
-# 终端1：后端（端口 8000）
+# 终端1：后端（端口 8000，绑定公网）
 cd backend
-~/.local/bin/uv run uvicorn app.main:app --reload
+~/.local/bin/uv run python run.py
 
-# 终端2：前端（端口 5173）
+# 终端2：前端（端口 5173，绑定公网）
 cd frontend
 pnpm dev
 ```
