@@ -9,6 +9,7 @@ import type {
   FngCurrent,
   FngPoint,
   MaPeriod,
+  MarketRule,
   SignalPoint,
   TimeRange,
   VixCurrent,
@@ -208,4 +209,19 @@ export function useIndicatorsOverview() {
   }, []);
 
   return { data, loading, error };
+}
+
+export function useMarketRules() {
+  const [rules, setRules] = useState<MarketRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchJson<MarketRule[]>(`${BASE}/admin/rules/public`)
+      .then(setRules)
+      .catch((e: unknown) => setError(String(e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { rules, loading, error };
 }

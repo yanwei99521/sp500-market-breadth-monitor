@@ -223,6 +223,16 @@ def list_rules(_: None = Depends(_require_auth)):
     return [_row_to_rule(r) for r in rows]
 
 
+@router.get("/rules/public", response_model=list[MarketRule])
+def list_public_rules():
+    """Return active market rules (public, no auth required)."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM market_rules WHERE is_active = 1 ORDER BY updated_at DESC"
+        ).fetchall()
+    return [_row_to_rule(r) for r in rows]
+
+
 @router.post("/rules", response_model=MarketRule, status_code=201)
 def create_rule(body: MarketRuleCreate, _: None = Depends(_require_auth)):
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")

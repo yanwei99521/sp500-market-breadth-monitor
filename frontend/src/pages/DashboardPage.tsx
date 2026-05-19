@@ -1,5 +1,6 @@
 import { INDICATORS } from "../config/indicators";
 import IndicatorCard from "../components/IndicatorCard";
+import MarketRulesSection from "../components/MarketRulesSection";
 import SentimentCard from "../components/SentimentCard";
 import { useIndicatorsOverview } from "../hooks/useBreadth";
 import type { IndicatorOverview } from "../types/indicator";
@@ -88,6 +89,9 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Market Rules */}
+      <MarketRulesSection />
 
       {/* Footer */}
       <footer className="text-xs text-zinc-400 text-center pb-4">

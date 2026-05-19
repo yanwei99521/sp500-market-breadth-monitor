@@ -9,6 +9,8 @@ __pycache__/
 
 # Database (too large, users should run init_data.py)
 backend/stock.db
+backend/stock.db-shm
+backend/stock.db-wal
 
 # Logs
 logs/
