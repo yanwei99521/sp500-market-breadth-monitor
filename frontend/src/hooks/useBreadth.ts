@@ -3,14 +3,16 @@ import type {
   BreadthPoint,
   CallSkewCurrent,
   CallSkewPoint,
-  CotCurrent,
-  CotPoint,
+  CapePoint,
   CurrentBreadth,
+  DailyStatusResponse,
   FngCurrent,
   FngPoint,
   MaPeriod,
   MarketRule,
+  QqqDrawdownPoint,
   SignalPoint,
+  ThreeSignalStatus,
   TimeRange,
   VixCurrent,
   VixPoint,
@@ -104,39 +106,6 @@ export function useCallSkewHistory(range: TimeRange = "all") {
   return { data, loading };
 }
 
-export function useCotCurrent() {
-  const [data, setData] = useState<CotCurrent | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchJson<CotCurrent | null>(`${BASE}/cot/current`)
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  return { data, loading };
-}
-
-export function useCotHistory(range: TimeRange = "all") {
-  const [data, setData] = useState<CotPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchJson<CotPoint[]>(`${BASE}/cot/history?range=${range}`)
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [range]);
-
-  return { data, loading };
-}
-
 export function useVixCurrent() {
   const [data, setData] = useState<VixCurrent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -209,6 +178,83 @@ export function useIndicatorsOverview() {
   }, []);
 
   return { data, loading, error };
+}
+
+export function useDailyIndicatorStatus(range: TimeRange = "1y") {
+  const [data, setData] = useState<DailyStatusResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchJson<DailyStatusResponse>(`${BASE}/indicators/daily-status?range=${range}`)
+      .then((d) => {
+        setData(d);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        setError(String(e));
+        setLoading(false);
+      });
+  }, [range]);
+
+  return { data, loading, error };
+}
+
+export function useThreeSignalStatus() {
+  const [data, setData] = useState<ThreeSignalStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchJson<ThreeSignalStatus>(`${BASE}/three-signals/current`)
+      .then((d) => {
+        setData(d);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        setError(String(e));
+        setLoading(false);
+      });
+  }, []);
+
+  return { data, loading, error };
+}
+
+export function useCapeHistory(range: TimeRange = "all") {
+  const [data, setData] = useState<CapePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchJson<CapePoint[]>(`${BASE}/three-signals/cape/history?range=${range}`)
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [range]);
+
+  return { data, loading };
+}
+
+export function useQqqDrawdownHistory(range: TimeRange = "all") {
+  const [data, setData] = useState<QqqDrawdownPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchJson<QqqDrawdownPoint[]>(`${BASE}/three-signals/qqq-drawdown/history?range=${range}`)
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [range]);
+
+  return { data, loading };
 }
 
 export function useMarketRules() {

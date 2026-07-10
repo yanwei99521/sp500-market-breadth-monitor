@@ -42,6 +42,24 @@ class IndicatorOverviewItem(BaseModel):
     zone_label: str = ""     # human-readable zone label (used by sentiment indicators)
 
 
+class DailyIndicatorCell(BaseModel):
+    value: float | None
+    display_value: str
+    status: str              # "buy" | "sell" | "normal"
+    source_date: str | None
+    status_label: str = ""   # optional display label for zone-based indicators
+
+
+class DailyStatusRow(BaseModel):
+    date: str
+    indicators: dict[str, DailyIndicatorCell]
+
+
+class DailyStatusResponse(BaseModel):
+    range: str
+    rows: list[DailyStatusRow]
+
+
 class CallSkewPoint(BaseModel):
     date: str
     skew: float
@@ -54,19 +72,6 @@ class CallSkewCurrent(BaseModel):
     otm25d_iv: float
     skew: float
     is_signal: bool
-
-
-class CotPoint(BaseModel):
-    date: str
-    net_long: int       # net long contracts (long - short)
-
-
-class CotCurrent(BaseModel):
-    date: str
-    long_contracts: int
-    short_contracts: int
-    net_long: int
-    open_interest: int
 
 
 class FngPoint(BaseModel):
@@ -99,6 +104,39 @@ class VixCurrent(BaseModel):
     low: float
     close: float
     zone: str   # "sell" | "normal" | "buy" | "buy_strong"
+
+
+class ThreeSignalItem(BaseModel):
+    id: str
+    name: str
+    date: str | None
+    value: float | None
+    display_value: str
+    zone: str
+    status_label: str
+    is_active: bool
+    description: str
+
+
+class ThreeSignalStatus(BaseModel):
+    date: str | None
+    active_count: int
+    action_label: str
+    action_description: str
+    items: list[ThreeSignalItem]
+
+
+class CapePoint(BaseModel):
+    date: str
+    cape: float
+    percentile: float
+
+
+class QqqDrawdownPoint(BaseModel):
+    date: str
+    close: float
+    drawdown: float
+    return_25d: float | None
 
 
 # ── Admin ────────────────────────────────────────────────────────────────────

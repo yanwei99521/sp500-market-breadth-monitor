@@ -1,7 +1,9 @@
 import { INDICATORS } from "../config/indicators";
+import DailyStatusTable from "../components/DailyStatusTable";
 import IndicatorCard from "../components/IndicatorCard";
 import MarketRulesSection from "../components/MarketRulesSection";
 import SentimentCard from "../components/SentimentCard";
+import ThreeSignalPanel from "../components/ThreeSignalPanel";
 import { useIndicatorsOverview } from "../hooks/useBreadth";
 import type { IndicatorOverview } from "../types/indicator";
 
@@ -63,6 +65,8 @@ export default function DashboardPage() {
         )}
       </section>
 
+      <ThreeSignalPanel />
+
       {/* Dual confirmation banner */}
       {dualConfirmed && (
         <div className="bg-green-50 border border-green-400 rounded-lg px-4 py-3 text-sm text-green-800">
@@ -89,6 +93,9 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Global daily status table */}
+      <DailyStatusTable />
 
       {/* Market Rules */}
       <MarketRulesSection />

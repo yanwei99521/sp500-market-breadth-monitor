@@ -65,7 +65,7 @@ export const INDICATORS: IndicatorConfig[] = [
     id: "vix",
     name: "VIX 恐慌指数",
     shortName: "VIX",
-    description: "CBOE 波动率指数 — ≥40重仓买入 / ≥30买入 / ≤14减仓",
+    description: "CBOE 波动率指数 — 四档恐慌仓位信号",
     type: "buy",
     threshold: 30,
     thresholdDirection: "above",
@@ -81,9 +81,10 @@ export const INDICATORS: IndicatorConfig[] = [
       signal:
         "VIX ≥ 40（极度恐慌）→ 重仓买入；VIX ≥ 30（高度恐慌）→ 分批买入；VIX 14～30 → 正常观察；VIX ≤ 14（极度平静）→ 减仓/止盈。",
       howToUse: [
-        "VIX ≥ 40：历史上每次触及 40 以上后的 12 个月均录得正收益，可配置 50%～80% 仓位，是最强买入窗口。",
-        "VIX ≥ 30：开始分批买入标普500 ETF（SPY/VOO）或纳指 ETF（QQQ），可配置 20%～30% 仓位。",
-        "VIX ≤ 14：市场极度平静，考虑将股票仓位降至保守水平（30%～50%），分批锁定利润。",
+        "VIX ≥ 40（极度恐慌）：重仓买入。",
+        "VIX ≥ 30（高度恐慌）：分批买入。",
+        "VIX 14-30：正常观察。",
+        "VIX ≤ 14（极度平静）：减仓/止盈。",
         "结合 MA50/MA200 宽度指标：宽度极端超卖 + VIX 高企，是最强的双重确认买入信号。",
       ],
       caution:
@@ -91,38 +92,10 @@ export const INDICATORS: IndicatorConfig[] = [
     },
   },
   {
-    id: "cot-sp500",
-    name: "CTA 净持仓",
-    shortName: "CTA仓位",
-    description: "标普500期货：杠杆基金净多仓（CFTC TFF报告）",
-    type: "buy",
-    threshold: -200000,
-    thresholdDirection: "below",
-    thresholdColor: "#f59e0b",
-    chartColor: "#2563eb",
-    variant: "cot",
-    valueFormat: "thousands",
-    unit: "k",
-    usage: {
-      what:
-        "来源于 CFTC（美国商品期货交易委员会）每周发布的 Traders in Financial Futures（TFF）报告，反映杠杆基金（包含 CTA 趋势跟踪基金、CPO 商品池运营商）在 E-mini S&P 500 期货上的净多仓合约数（多仓 − 空仓）。该数据每周二截止、周五下午对外公布。",
-      signal:
-        "当净多仓降至 -10 万张合约以下（约合 -275 亿美元），说明 CTA 系统性资金已积累大量空头仓位。高盛历史数据显示，在此极端空头背景下，任何正向价格动量均会触发 CTA 自动补仓/平空，形成「逼空式」上涨，如 2025年4月关税底部后的 +86 亿美元单周买入潮。",
-      howToUse: [
-        "将该指标与 MA50/MA200 宽度结合：宽度极端超卖 + CTA 极端空头同时出现，是历史上最强的多重确认买入信号。",
-        "CTA 净空头本身不直接做多，而是看做「弹簧压缩」——一旦市场止跌反弹，CTA 算法将被迫平空并翻多，产生额外的机械性买盘。",
-        "CFTC 数据有 3 天滞后（周二截止、周五发布），建议作为中期背景判断而非短期择时工具。",
-        "参考高盛 Prime Brokerage 的 CTA 定位模型（以美元规模计），本图以合约数近似，趋势方向一致。",
-      ],
-      caution:
-        "数据来源为 CFTC 期货持仓，不含股票现货多空对冲等其他 CTA 策略。单位为千张合约，每张合约约 27.5 万美元（S&P ~5500）。数据每周更新一次，非实时。",
-    },
-  },
-  {
     id: "fng",
     name: "Fear & Greed Index",
     shortName: "F&G",
-    description: "CNN 恐惧贪婪指数 — ≤25极度恐慌买入 / ≥75极度贪婪减仓",
+    description: "CNN 恐惧贪婪指数 — 五档情绪仓位信号",
     type: "buy",
     threshold: 25,
     thresholdDirection: "below",
@@ -138,10 +111,11 @@ export const INDICATORS: IndicatorConfig[] = [
       signal:
         "≤25（极度恐慌）→ 重仓买入；26-44（恐慌）→ 观察/轻仓；45-54（中性）→ 持仓观望；55-74（贪婪）→ 谨慎/减少买入；≥75（极度贪婪）→ 减仓/止盈。",
       howToUse: [
-        "指数 ≤ 25（极度恐慌）：开始分批买入，此时往往是中短期底部区域，可配置 20%～40% 仓位。",
-        "指数 ≤ 15（历史极端低位）：考虑重仓买入，历史上每次触及此水平后12个月均录得强劲正收益。",
-        "指数 ≥ 75（极度贪婪）：考虑将仓位降至中性水平（30%～50%），分批锁定利润。",
-        "指数 ≥ 90：大幅减仓至保守水平，历史上此类高点后通常有 10%-30% 以上回调。",
+        "≤25（极度恐慌）：重仓买入。",
+        "26-44（恐慌）：观察/轻仓。",
+        "45-54（中性）：持仓观望。",
+        "55-74（贪婪）：谨慎/减少买入。",
+        "≥75（极度贪婪）：减仓/止盈。",
         "结合 VIX 和 MA50/MA200 宽度多重确认：三者同时极端时，是历史最强信号叠加。",
       ],
       caution:
@@ -176,6 +150,60 @@ export const INDICATORS: IndicatorConfig[] = [
         "该指标基于 yfinance 实时期权链数据，节假日或市场休市时无法更新。偏斜率本身是情绪指标，不反映基本面，请勿单独作为买卖决策依据。",
     },
   },
+  {
+    id: "cape-percentile",
+    name: "CAPE 分位",
+    shortName: "CAPE",
+    description: "Shiller CAPE 历史分位 — <20%低估 / >70%高估 / >85%泡沫",
+    type: "buy",
+    threshold: 0.20,
+    thresholdDirection: "below",
+    thresholdColor: "#16a34a",
+    chartColor: "#dc2626",
+    variant: "cape",
+    valueFormat: "percent",
+    unit: "%",
+    usage: {
+      what:
+        "CAPE 分位衡量当前 Shiller CAPE 在长期历史中的相对位置。分位越高，估值越贵；分位越低，长期估值越便宜。",
+      signal:
+        "CAPE 分位低于 20% → 估值便宜，计入低位信号；高于 70% → 估值偏高；高于 85% → 泡沫警戒区。",
+      howToUse: [
+        "低于 20% 时，说明估值进入历史低位，可配合 QQQ 回撤和 VIX 恐慌做大底判断。",
+        "高于 70% 且指数贴近高点时，不追高，新增资金可以留在弹药仓。",
+        "高于 85% 时进入泡沫警戒区，适合逐步降低 TQQQ 暴露。",
+      ],
+      caution:
+        "CAPE 是慢变量，不适合单独做短线择时。它更适合作为估值背景，与回撤和恐慌信号共同使用。",
+    },
+  },
+  {
+    id: "qqq-drawdown",
+    name: "QQQ 回撤",
+    shortName: "QQQ回撤",
+    description: "QQQ 距历史高点回撤 — ≤-20%深度超跌 / 25日≤-12%快崩预警",
+    type: "buy",
+    threshold: -0.20,
+    thresholdDirection: "below",
+    thresholdColor: "#16a34a",
+    chartColor: "#2563eb",
+    variant: "qqq-drawdown",
+    valueFormat: "percent",
+    unit: "%",
+    usage: {
+      what:
+        "QQQ 回撤衡量纳指 ETF 当前价格距离历史高点的跌幅，同时跟踪 25 个交易日内的快速下跌幅度。",
+      signal:
+        "距历史高点回撤超过 20% → 深度超跌，计入低位信号；25 日内急跌超过 12% → 快崩预警，用于降低杠杆。",
+      howToUse: [
+        "回撤超过 20% 时，说明趋势和价格已进入深跌状态，可配合 CAPE 低估和 VIX 恐慌做加仓判断。",
+        "25 日急跌超过 12% 但未形成低位共振时，优先当作风控信号，降低 TQQQ 暴露。",
+        "回撤小于 5% 时说明指数贴近高点，若 CAPE 同时偏高，应避免追高。",
+      ],
+      caution:
+        "回撤指标反映价格状态，不代表下跌已经结束。真正的大底信号需要 CAPE、回撤、VIX 至少两项共振。",
+    },
+  },
 ];
 
 export function getIndicatorById(id: string): IndicatorConfig | undefined {
@@ -184,16 +212,25 @@ export function getIndicatorById(id: string): IndicatorConfig | undefined {
 
 /** Card border / text color based on indicator type and current zone. */
 export function getZoneColor(type: IndicatorType, zone: IndicatorZone): string {
+  if (zone === "danger") return "border-red-400";
+  if (zone === "warning") return "border-amber-400";
+  if (zone === "near_high") return "border-zinc-200";
   if (zone !== "active") return "border-zinc-200";
   return type === "buy" ? "border-green-500" : "border-red-500";
 }
 
 export function getZoneBg(type: IndicatorType, zone: IndicatorZone): string {
+  if (zone === "danger") return "bg-red-50";
+  if (zone === "warning") return "bg-amber-50";
+  if (zone === "near_high") return "bg-zinc-50";
   if (zone !== "active") return "bg-white";
   return type === "buy" ? "bg-green-50" : "bg-red-50";
 }
 
 export function getZoneTextColor(type: IndicatorType, zone: IndicatorZone): string {
+  if (zone === "danger") return "text-red-600";
+  if (zone === "warning") return "text-amber-700";
+  if (zone === "near_high") return "text-zinc-800";
   if (zone !== "active") return "text-zinc-800";
   return type === "buy" ? "text-green-700" : "text-red-700";
 }

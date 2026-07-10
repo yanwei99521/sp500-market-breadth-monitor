@@ -189,15 +189,15 @@ export default function VixChart({ data, range, loading }: Props) {
       <div className="flex items-center gap-5 text-xs text-zinc-500 px-1">
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-0.5 bg-green-600 inline-block" style={{ borderTop: "2px dashed #16a34a" }} />
-          ≥ 40 重仓买入
+          ≥ 40 极度恐慌（重仓买入）
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-4 inline-block" style={{ borderTop: "2px dashed #2563eb" }} />
-          ≥ 30 买入
+          ≥ 30 高度恐慌（分批买入）
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-4 inline-block" style={{ borderTop: "2px dashed #ef4444" }} />
-          ≤ 14 卖出
+          ≤ 14 极度平静（减仓/止盈）
         </span>
       </div>
 

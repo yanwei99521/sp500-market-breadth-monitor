@@ -20,7 +20,7 @@ export default function AppHeader() {
           </div>
         </Link>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-zinc-400">每日 09:02 自动更新</span>
+          <span className="text-xs text-zinc-400">每日 07:00 自动更新</span>
           <Link
             to="/admin"
             className="text-xs text-zinc-300 hover:text-zinc-500 transition-colors"

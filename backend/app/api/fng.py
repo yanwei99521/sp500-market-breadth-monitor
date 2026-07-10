@@ -2,11 +2,11 @@
 /api/fng/* — CNN Fear & Greed Index endpoints.
 
 Signal rules:
-  score <= 25  → extreme_fear  (极度恐慌 → 强力买入)
-  score <= 44  → fear          (恐慌 → 买入观察)
-  score <= 54  → neutral
-  score <= 74  → greed
-  score >= 75  → extreme_greed (极度贪婪 → 卖出/减仓)
+  score <= 25  → extreme_fear  (极度恐慌 → 重仓买入)
+  score <= 44  → fear          (恐慌 → 观察/轻仓)
+  score <= 54  → neutral       (中性 → 持仓观望)
+  score <= 74  → greed         (贪婪 → 谨慎/减少买入)
+  score >= 75  → extreme_greed (极度贪婪 → 减仓/止盈)
 """
 from datetime import date, timedelta
 

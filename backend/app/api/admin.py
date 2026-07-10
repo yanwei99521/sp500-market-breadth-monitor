@@ -47,10 +47,11 @@ def get_status(_: None = Depends(_require_auth)):
 
         bh_date, bh_count = _query("breadth_history", "date")
         cs_date, cs_count = _query("call_skew_history", "date")
-        cot_date, cot_count = _query("cot_history", "date")
         pr_date, pr_count = _query("daily_prices", "date")
         vix_date, vix_count = _query("vix_history", "date")
         fng_date, fng_count = _query("fng_history", "date")
+        qqq_date, qqq_count = _query("qqq_history", "date")
+        cape_date, cape_count = _query("cape_history", "month")
 
     return AdminStatus(
         sources=[
@@ -58,12 +59,13 @@ def get_status(_: None = Depends(_require_auth)):
                              last_date=bh_date, row_count=bh_count),
             DataSourceStatus(id="call-skew", name="Call Skew（call_skew_history）",
                              last_date=cs_date, row_count=cs_count),
-            DataSourceStatus(id="cot", name="CTA净持仓（cot_history）",
-                             last_date=cot_date, row_count=cot_count),
             DataSourceStatus(id="vix", name="VIX 恐慌指数（vix_history）",
                              last_date=vix_date, row_count=vix_count),
             DataSourceStatus(id="fng", name="Fear & Greed Index（fng_history）",
                              last_date=fng_date, row_count=fng_count),
+            DataSourceStatus(id="three-signals", name="三信号框架（QQQ/CAPE）",
+                             last_date=max([d for d in [qqq_date, cape_date] if d], default=None),
+                             row_count=qqq_count + cape_count),
             DataSourceStatus(id="prices", name="个股价格（daily_prices）",
                              last_date=pr_date, row_count=pr_count),
         ]
@@ -174,18 +176,6 @@ def update_vix(_: None = Depends(_require_auth)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/update/cot")
-def update_cot(_: None = Depends(_require_auth)):
-    """Fetch latest CFTC COT data."""
-    from app.services import cot_fetcher
-    try:
-        n = cot_fetcher.update_cot_history()
-        return {"ok": True, "message": f"COT 数据更新完成，共处理 {n} 条记录"}
-    except Exception as e:
-        logger.exception("Manual COT update failed")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.post("/update/fng")
 def update_fng(_: None = Depends(_require_auth)):
     """Fetch latest Fear & Greed data."""
@@ -195,6 +185,21 @@ def update_fng(_: None = Depends(_require_auth)):
         return {"ok": True, "message": f"Fear & Greed 数据更新完成，共处理 {n} 条记录"}
     except Exception as e:
         logger.exception("Manual F&G update failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/update/three-signals")
+def update_three_signals(_: None = Depends(_require_auth)):
+    """Fetch latest QQQ and CAPE data for the three-signal framework."""
+    from app.services import three_signals
+    try:
+        result = three_signals.fetch_and_store()
+        return {
+            "ok": True,
+            "message": f"三信号数据更新完成：QQQ {result['qqq']} 条，CAPE {result['cape']} 条",
+        }
+    except Exception as e:
+        logger.exception("Manual three-signals update failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 

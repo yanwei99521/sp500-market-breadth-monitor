@@ -55,17 +55,6 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_call_skew_date
                 ON call_skew_history(date);
 
-            CREATE TABLE IF NOT EXISTS cot_history (
-                date             DATE    NOT NULL PRIMARY KEY,
-                long_contracts   INTEGER NOT NULL,
-                short_contracts  INTEGER NOT NULL,
-                net_long         INTEGER NOT NULL,
-                open_interest    INTEGER NOT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_cot_date
-                ON cot_history(date);
-
             CREATE TABLE IF NOT EXISTS fng_history (
                 date   DATE    NOT NULL PRIMARY KEY,
                 score  REAL    NOT NULL,
@@ -85,6 +74,20 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_vix_date
                 ON vix_history(date);
+
+            CREATE TABLE IF NOT EXISTS qqq_history (
+                date  DATE NOT NULL PRIMARY KEY,
+                close REAL NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_qqq_date
+                ON qqq_history(date);
+
+            CREATE TABLE IF NOT EXISTS cape_history (
+                month      TEXT NOT NULL PRIMARY KEY,
+                cape       REAL NOT NULL,
+                percentile REAL NOT NULL
+            );
 
             CREATE TABLE IF NOT EXISTS market_rules (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,

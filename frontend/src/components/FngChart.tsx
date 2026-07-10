@@ -169,11 +169,11 @@ export default function FngChart({ data, range, loading }: Props) {
       <div className="flex items-center gap-5 text-xs text-zinc-500 px-1">
         <span className="flex items-center gap-1.5">
           <span className="w-4 inline-block" style={{ borderTop: "2px dashed #ef4444" }} />
-          ≤ 25 极度恐慌（买入）
+          ≤ 25 极度恐慌（重仓买入）
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-4 inline-block" style={{ borderTop: "2px dashed #16a34a" }} />
-          ≥ 75 极度贪婪（卖出）
+          ≥ 75 极度贪婪（减仓/止盈）
         </span>
       </div>
 

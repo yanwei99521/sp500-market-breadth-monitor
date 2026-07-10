@@ -57,7 +57,13 @@ export default function IndicatorCard({ config, overview }: Props) {
       {/* Name + badge */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-zinc-500">{config.name}</span>
-        <StatusBadge type={overview.type} zone={overview.zone} />
+        {overview.zone_label ? (
+          <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600">
+            {overview.zone_label}
+          </span>
+        ) : (
+          <StatusBadge type={overview.type} zone={overview.zone} />
+        )}
       </div>
 
       {/* Threshold */}

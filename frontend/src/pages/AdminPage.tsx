@@ -76,9 +76,9 @@ function resolveTab(): string {
 const UPDATE_SOURCES = [
   { id: "breadth", label: "MA宽度" },
   { id: "call-skew", label: "Call Skew" },
-  { id: "cot", label: "CTA净持仓" },
   { id: "vix", label: "VIX" },
   { id: "fng", label: "Fear & Greed" },
+  { id: "three-signals", label: "三信号" },
 ];
 
 function StatusSection({ token, onUnauth, onSwitchTab }: { token: string; onUnauth: () => void; onSwitchTab: (tab: string) => void }) {

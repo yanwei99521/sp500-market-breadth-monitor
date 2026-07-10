@@ -13,7 +13,7 @@ export interface IndicatorUsage {
   caution?: string;
 }
 
-export type IndicatorVariant = "breadth" | "call-skew" | "cot" | "vix" | "fng";
+export type IndicatorVariant = "breadth" | "call-skew" | "vix" | "fng" | "cape" | "qqq-drawdown";
 export type ValueFormat = "percent" | "decimal" | "thousands";
 
 export interface IndicatorConfig {

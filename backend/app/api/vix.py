@@ -2,10 +2,10 @@
 /api/vix/* — CBOE Volatility Index (VIX) endpoints.
 
 Signal rules:
-  close >= 40  → buy_strong  (重仓买入)
-  close >= 30  → buy         (买入)
-  close <= 14  → sell        (卖出)
-  otherwise    → normal
+  close >= 40  → buy_strong  (极度恐慌 → 重仓买入)
+  close >= 30  → buy         (高度恐慌 → 分批买入)
+  14 < close < 30 → normal   (正常观察)
+  close <= 14  → sell        (极度平静 → 减仓/止盈)
 """
 from datetime import date, timedelta
 

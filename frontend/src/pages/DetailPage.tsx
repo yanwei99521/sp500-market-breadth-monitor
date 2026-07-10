@@ -1,22 +1,23 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import BreadthChart from "../components/BreadthChart";
+import CapeChart from "../components/CapeChart";
 import CallSkewChart from "../components/CallSkewChart";
-import CotChart from "../components/CotChart";
 import FngChart from "../components/FngChart";
+import QqqDrawdownChart from "../components/QqqDrawdownChart";
 import VixChart from "../components/VixChart";
 import SignalCard from "../components/SignalCard";
 import SignalHistory from "../components/SignalHistory";
 import { getIndicatorById } from "../config/indicators";
 import {
   useBreadthHistory,
+  useCapeHistory,
   useCallSkewCurrent,
   useCallSkewHistory,
-  useCotCurrent,
-  useCotHistory,
   useCurrentBreadth,
   useFngCurrent,
   useFngHistory,
+  useQqqDrawdownHistory,
   useSignals,
   useVixCurrent,
   useVixHistory,
@@ -41,6 +42,71 @@ const TIME_RANGES: { label: string; value: TimeRange }[] = [
   { label: "全部", value: "all" },
 ];
 
+function getFngStatus(score: number) {
+  if (score <= 25) {
+    return {
+      border: "border-green-500 bg-green-50",
+      valueColor: "text-green-700",
+      label: "≤ 25 极度恐慌 — 重仓买入",
+    };
+  }
+  if (score <= 44) {
+    return {
+      border: "border-emerald-400 bg-emerald-50",
+      valueColor: "text-emerald-700",
+      label: "26-44 恐慌 — 观察/轻仓",
+    };
+  }
+  if (score <= 54) {
+    return {
+      border: "border-zinc-200 bg-white",
+      valueColor: "text-zinc-800",
+      label: "45-54 中性 — 持仓观望",
+    };
+  }
+  if (score <= 74) {
+    return {
+      border: "border-amber-400 bg-amber-50",
+      valueColor: "text-amber-700",
+      label: "55-74 贪婪 — 谨慎/减少买入",
+    };
+  }
+  return {
+    border: "border-red-400 bg-red-50",
+    valueColor: "text-red-600",
+    label: "≥ 75 极度贪婪 — 减仓/止盈",
+  };
+}
+
+function getVixStatus(zone: string) {
+  if (zone === "buy_strong") {
+    return {
+      border: "border-green-500 bg-green-50",
+      valueColor: "text-green-700",
+      label: "≥ 40 极度恐慌 — 重仓买入",
+    };
+  }
+  if (zone === "buy") {
+    return {
+      border: "border-blue-400 bg-blue-50",
+      valueColor: "text-blue-700",
+      label: "≥ 30 高度恐慌 — 分批买入",
+    };
+  }
+  if (zone === "sell") {
+    return {
+      border: "border-red-400 bg-red-50",
+      valueColor: "text-red-600",
+      label: "≤ 14 极度平静 — 减仓/止盈",
+    };
+  }
+  return {
+    border: "border-zinc-200 bg-white",
+    valueColor: "text-zinc-800",
+    label: "14-30 正常观察",
+  };
+}
+
 export default function DetailPage() {
   const { indicatorId } = useParams<{ indicatorId: string }>();
   const config = getIndicatorById(indicatorId ?? "");
@@ -48,9 +114,10 @@ export default function DetailPage() {
   const [range, setRange] = useState<TimeRange>("3y");
 
   const isCallSkew = config?.variant === "call-skew";
-  const isCot = config?.variant === "cot";
   const isVix = config?.variant === "vix";
   const isFng = config?.variant === "fng";
+  const isCape = config?.variant === "cape";
+  const isQqqDrawdown = config?.variant === "qqq-drawdown";
   const ma = config?.apiParams?.ma ?? 50;
 
   const { data: current } = useCurrentBreadth();
@@ -58,24 +125,30 @@ export default function DetailPage() {
   const { data: signals } = useSignals(ma as 50 | 200);
   const { data: skewHistory, loading: skewLoading } = useCallSkewHistory("all");
   const { data: skewCurrent } = useCallSkewCurrent();
-  const { data: cotHistory, loading: cotLoading } = useCotHistory("all");
-  const { data: cotCurrent } = useCotCurrent();
   const { data: vixHistory, loading: vixLoading } = useVixHistory("all");
   const { data: vixCurrent } = useVixCurrent();
   const { data: fngHistory, loading: fngLoading } = useFngHistory("all");
   const { data: fngCurrent } = useFngCurrent();
+  const { data: capeHistory, loading: capeLoading } = useCapeHistory("all");
+  const { data: qqqDrawdownHistory, loading: qqqDrawdownLoading } = useQqqDrawdownHistory("all");
 
-  const history = isCallSkew || isCot || isVix || isFng ? [] : breadthHistory;
+  const history = isCallSkew || isVix || isFng || isCape || isQqqDrawdown ? [] : breadthHistory;
   const loading = isCallSkew ? skewLoading
-    : isCot ? cotLoading
     : isVix ? vixLoading
     : isFng ? fngLoading
+    : isCape ? capeLoading
+    : isQqqDrawdown ? qqqDrawdownLoading
     : breadthLoading;
 
-  const currentStatus = config && !isCallSkew && !isCot && !isVix && !isFng
+  const currentStatus = config && !isCallSkew && !isVix && !isFng && !isCape && !isQqqDrawdown
     ? ma === 50
       ? current?.ma50
       : current?.ma200
+    : undefined;
+
+  const capeCurrent = capeHistory.length > 0 ? capeHistory[capeHistory.length - 1] : undefined;
+  const qqqDrawdownCurrent = qqqDrawdownHistory.length > 0
+    ? qqqDrawdownHistory[qqqDrawdownHistory.length - 1]
     : undefined;
 
   const filteredSignals = useMemo(() => {
@@ -86,6 +159,9 @@ export default function DetailPage() {
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     return signals.filter((s) => s.date >= cutoffStr);
   }, [signals, range]);
+
+  const fngStatus = fngCurrent ? getFngStatus(fngCurrent.score) : undefined;
+  const vixStatus = vixCurrent ? getVixStatus(vixCurrent.zone) : undefined;
 
   if (!config) {
     return (
@@ -117,39 +193,84 @@ export default function DetailPage() {
         </section>
       )}
 
-      {/* Current status card — COT */}
-      {isCot && cotCurrent && (
+      {/* Current status card — CAPE */}
+      {isCape && capeCurrent && (
         <section>
-          <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">
-            当前状态
-          </h2>
-          <div className="max-w-sm rounded-xl border-2 border-zinc-200 bg-white p-5 space-y-3">
+          <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">当前状态</h2>
+          <div className={`max-w-sm rounded-xl border-2 p-5 space-y-3 ${
+            capeCurrent.percentile < 20 ? "border-green-500 bg-green-50"
+              : capeCurrent.percentile >= 85 ? "border-red-400 bg-red-50"
+              : capeCurrent.percentile >= 70 ? "border-amber-400 bg-amber-50"
+              : "border-zinc-200 bg-white"
+          }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">CTA 净持仓（E-mini S&P）</span>
-              <span className="text-xs text-zinc-400">{cotCurrent.date}</span>
+              <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Shiller CAPE 分位</span>
+              <span className="text-xs text-zinc-400">{capeCurrent.date.slice(0, 7)}</span>
             </div>
-            <div className={`text-4xl font-bold tabular-nums ${cotCurrent.net_long < -200000 ? "text-green-700" : "text-zinc-800"}`}>
-              {cotCurrent.net_long > 0 ? "+" : ""}{(cotCurrent.net_long / 1000).toFixed(0)}k
+            <div className={`text-4xl font-bold tabular-nums ${
+              capeCurrent.percentile < 20 ? "text-green-700"
+                : capeCurrent.percentile >= 85 ? "text-red-600"
+                : capeCurrent.percentile >= 70 ? "text-amber-700"
+                : "text-zinc-800"
+            }`}>
+              {capeCurrent.percentile.toFixed(1)}%
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <div className="text-zinc-400 mb-0.5">多仓</div>
-                <div className="text-zinc-700">+{(cotCurrent.long_contracts / 1000).toFixed(0)}k 张</div>
+                <div className="text-zinc-400 mb-0.5">CAPE</div>
+                <div className="text-zinc-700">{capeCurrent.cape.toFixed(1)}</div>
               </div>
               <div>
-                <div className="text-zinc-400 mb-0.5">空仓</div>
-                <div className="text-zinc-700">-{(cotCurrent.short_contracts / 1000).toFixed(0)}k 张</div>
+                <div className="text-zinc-400 mb-0.5">低位阈值</div>
+                <div className="text-zinc-700">&lt; 20%</div>
               </div>
             </div>
-            <div className="text-xs text-zinc-400">
-              净空头阈值 &lt; -200k 张
-              {cotCurrent.net_long < -200000
-                ? <span className="ml-2 text-green-700 font-medium">● CTA 极端空头</span>
-                : <span className="ml-2 text-zinc-400">· 正常</span>
-              }
+            <div className="text-xs text-zinc-500">
+              {capeCurrent.percentile < 20 && <span className="font-semibold text-green-700">● 估值便宜 — 低位信号</span>}
+              {capeCurrent.percentile >= 85 && <span className="font-semibold text-red-600">● 泡沫警戒 — 降低杠杆</span>}
+              {capeCurrent.percentile >= 70 && capeCurrent.percentile < 85 && <span className="font-semibold text-amber-700">● 估值偏高 — 不追高</span>}
+              {capeCurrent.percentile >= 20 && capeCurrent.percentile < 70 && <span className="font-semibold text-zinc-500">● 估值中性</span>}
             </div>
-            <div className="text-xs text-zinc-400">
-              数据来源：CFTC TFF 报告（杠杆基金期货持仓）
+          </div>
+        </section>
+      )}
+
+      {/* Current status card — QQQ drawdown */}
+      {isQqqDrawdown && qqqDrawdownCurrent && (
+        <section>
+          <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">当前状态</h2>
+          <div className={`max-w-sm rounded-xl border-2 p-5 space-y-3 ${
+            qqqDrawdownCurrent.drawdown <= -0.20 ? "border-green-500 bg-green-50"
+              : (qqqDrawdownCurrent.return_25d ?? 0) <= -0.12 ? "border-red-400 bg-red-50"
+              : "border-zinc-200 bg-white"
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">QQQ Drawdown</span>
+              <span className="text-xs text-zinc-400">{qqqDrawdownCurrent.date}</span>
+            </div>
+            <div className={`text-4xl font-bold tabular-nums ${
+              qqqDrawdownCurrent.drawdown <= -0.20 ? "text-green-700"
+                : (qqqDrawdownCurrent.return_25d ?? 0) <= -0.12 ? "text-red-600"
+                : "text-zinc-800"
+            }`}>
+              {(qqqDrawdownCurrent.drawdown * 100).toFixed(1)}%
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <div className="text-zinc-400 mb-0.5">QQQ 收盘</div>
+                <div className="text-zinc-700">{qqqDrawdownCurrent.close.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-zinc-400 mb-0.5">25 日涨跌幅</div>
+                <div className="text-zinc-700">
+                  {qqqDrawdownCurrent.return_25d === null ? "--" : `${(qqqDrawdownCurrent.return_25d * 100).toFixed(1)}%`}
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-zinc-500">
+              {qqqDrawdownCurrent.drawdown <= -0.20 && <span className="font-semibold text-green-700">● 深度超跌 — 低位信号</span>}
+              {qqqDrawdownCurrent.drawdown > -0.20 && (qqqDrawdownCurrent.return_25d ?? 0) <= -0.12 && <span className="font-semibold text-red-600">● 快崩预警 — 降低杠杆</span>}
+              {qqqDrawdownCurrent.drawdown > -0.20 && (qqqDrawdownCurrent.return_25d ?? 0) > -0.12 && <span className="font-semibold text-zinc-500">● 正常回撤</span>}
             </div>
           </div>
         </section>
@@ -159,19 +280,13 @@ export default function DetailPage() {
       {isFng && fngCurrent && (
         <section>
           <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">当前状态</h2>
-          <div className={`max-w-sm rounded-xl border-2 bg-white p-5 space-y-3
-            ${fngCurrent.score <= 25 ? "border-green-500 bg-green-50"
-              : fngCurrent.score >= 75 ? "border-red-400 bg-red-50"
-              : "border-zinc-200"}`}
+          <div className={`max-w-sm rounded-xl border-2 p-5 space-y-3 ${fngStatus?.border}`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">CNN Fear & Greed</span>
               <span className="text-xs text-zinc-400">{fngCurrent.date}</span>
             </div>
-            <div className={`text-4xl font-bold tabular-nums
-              ${fngCurrent.score <= 25 ? "text-green-700"
-                : fngCurrent.score >= 75 ? "text-red-600"
-                : "text-zinc-800"}`}
+            <div className={`text-4xl font-bold tabular-nums ${fngStatus?.valueColor}`}
             >
               {fngCurrent.score.toFixed(1)}
             </div>
@@ -205,9 +320,7 @@ export default function DetailPage() {
               </div>
             )}
             <div className="text-xs text-zinc-500">
-              {fngCurrent.score <= 25 && <span className="text-green-700 font-semibold">● ≤ 25 极度恐慌 — 买入信号</span>}
-              {fngCurrent.score >= 75 && <span className="text-red-600 font-semibold">● ≥ 75 极度贪婪 — 卖出信号</span>}
-              {fngCurrent.score > 25 && fngCurrent.score < 75 && <span className="text-zinc-400">· 25～75 正常区间</span>}
+              <span className={`font-semibold ${fngStatus?.valueColor}`}>● {fngStatus?.label}</span>
             </div>
           </div>
         </section>
@@ -217,21 +330,13 @@ export default function DetailPage() {
       {isVix && vixCurrent && (
         <section>
           <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">当前状态</h2>
-          <div className={`max-w-sm rounded-xl border-2 bg-white p-5 space-y-3
-            ${vixCurrent.zone === "buy_strong" ? "border-green-500 bg-green-50"
-              : vixCurrent.zone === "buy" ? "border-blue-400 bg-blue-50"
-              : vixCurrent.zone === "sell" ? "border-red-400 bg-red-50"
-              : "border-zinc-200"}`}
+          <div className={`max-w-sm rounded-xl border-2 p-5 space-y-3 ${vixStatus?.border}`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">CBOE VIX 恐慌指数</span>
               <span className="text-xs text-zinc-400">{vixCurrent.date}</span>
             </div>
-            <div className={`text-4xl font-bold tabular-nums
-              ${vixCurrent.zone === "buy_strong" ? "text-green-700"
-                : vixCurrent.zone === "buy" ? "text-blue-700"
-                : vixCurrent.zone === "sell" ? "text-red-600"
-                : "text-zinc-800"}`}
+            <div className={`text-4xl font-bold tabular-nums ${vixStatus?.valueColor}`}
             >
               {vixCurrent.close.toFixed(2)}
             </div>
@@ -241,10 +346,7 @@ export default function DetailPage() {
               <div><div className="text-zinc-400 mb-0.5">开盘</div><div className="text-zinc-700">{vixCurrent.open.toFixed(2)}</div></div>
             </div>
             <div className="text-xs text-zinc-500">
-              {vixCurrent.zone === "buy_strong" && <span className="text-green-700 font-semibold">● ≥ 40 极度恐慌 — 重仓买入</span>}
-              {vixCurrent.zone === "buy" && <span className="text-blue-700 font-semibold">● ≥ 30 高度恐慌 — 买入</span>}
-              {vixCurrent.zone === "sell" && <span className="text-red-600 font-semibold">● ≤ 14 极度平静 — 减仓/卖出</span>}
-              {vixCurrent.zone === "normal" && <span className="text-zinc-400">· 14～30 正常区间</span>}
+              <span className={`font-semibold ${vixStatus?.valueColor}`}>● {vixStatus?.label}</span>
             </div>
           </div>
         </section>
@@ -319,12 +421,14 @@ export default function DetailPage() {
           </div>
           {isCallSkew ? (
             <CallSkewChart data={skewHistory} range={range} loading={loading} />
-          ) : isCot ? (
-            <CotChart data={cotHistory} range={range} loading={loading} />
           ) : isVix ? (
             <VixChart data={vixHistory} range={range} loading={loading} />
           ) : isFng ? (
             <FngChart data={fngHistory} range={range} loading={loading} />
+          ) : isCape ? (
+            <CapeChart data={capeHistory} range={range} loading={loading} />
+          ) : isQqqDrawdown ? (
+            <QqqDrawdownChart data={qqqDrawdownHistory} range={range} loading={loading} />
           ) : (
             <BreadthChart
               data={history}
@@ -338,7 +442,7 @@ export default function DetailPage() {
       </section>
 
       {/* Signal history (breadth only) */}
-      {!isCallSkew && !isCot && !isVix && !isFng && (
+      {!isCallSkew && !isVix && !isFng && !isCape && !isQqqDrawdown && (
         <section>
           <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">
             历史信号触发记录

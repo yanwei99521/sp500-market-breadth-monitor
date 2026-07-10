@@ -5,7 +5,7 @@
 核心判断逻辑：
 
 - 标普500成份股大面积跌破均线时，市场可能进入极端超卖区。
-- VIX、Fear & Greed、CTA 净持仓、QQQ 看涨偏斜等指标用于交叉确认市场情绪和资金状态。
+- VIX、Fear & Greed、QQQ 看涨偏斜等指标用于交叉确认市场情绪和资金状态。
 - 多个买入信号同时出现时，前端会突出展示为更强的风险资产买入机会。
 
 > 本项目是数据看板和研究工具，不构成投资建议。
@@ -51,14 +51,17 @@ http://localhost:8000/health
 
 | 指标 | 数据含义 | 当前用途 |
 | --- | --- | --- |
-| VIX 恐慌指数 | CBOE 标普500隐含波动率 | `>= 30` 视为恐慌买入区，`>= 40` 为极端恐慌；`<= 14` 视为过度平静、减仓区 |
-| Fear & Greed Index | CNN 恐惧贪婪指数 | `<= 25` 极度恐慌买入，`>= 75` 极度贪婪减仓 |
-| CTA 净持仓 | CFTC TFF 报告中的杠杆基金标普500期货净持仓 | 净空头极端时作为潜在反弹/逼空背景 |
+| VIX 恐慌指数 | CBOE 标普500隐含波动率 | `>=40` 极度恐慌 → 重仓买入；`>=30` 高度恐慌 → 分批买入；`14-30` 正常观察；`<=14` 极度平静 → 减仓/止盈 |
+| Fear & Greed Index | CNN 恐惧贪婪指数 | `<=25` 极度恐慌 → 重仓买入；`26-44` 恐慌 → 观察/轻仓；`45-54` 中性 → 持仓观望；`55-74` 贪婪 → 谨慎/减少买入；`>=75` 极度贪婪 → 减仓/止盈 |
 | QQQ 看涨偏斜 | QQQ 约3个月25-delta看涨期权 IV / 平值 IV | 看涨偏斜走强时作为趋势修复确认 |
 
 ### 3. 市场规律
 
 后台可以维护“市场规律”笔记，例如历史统计、技术分析、资金流向、情绪指标、宏观规律等。首页会展示已启用的规则，方便把人工研究结论和量化指标放在同一个看板里。
+
+### 4. 全局每日状态
+
+首页提供“全局每日状态”表，默认展示最近 1 年交易日，每天一行、每个指标一列。单元格显示指标数值和状态：绿色代表买入倾向，红色代表减仓/风险控制倾向，灰色代表正常；Fear & Greed 会按五档区间显示具体操作含义。周度或缺失数据会沿用上一条有效值，并保留原始数据日期。
 
 ## 数据来源和更新
 
@@ -69,7 +72,6 @@ http://localhost:8000/health
 | MA50/MA200 市场宽度 | 本地计算 | `breadth_history` |
 | VIX | yfinance `^VIX` | `vix_history` |
 | Fear & Greed | CNN 接口 | `fng_history` |
-| CTA/COT 持仓 | CFTC Socrata API | `cot_history` |
 | QQQ Call Skew | yfinance 期权链 | `call_skew_history` |
 | 市场规律 | 管理后台手工维护 | `market_rules` |
 
@@ -81,8 +83,7 @@ backend/stock.db
 
 定时任务：
 
-- 每天北京时间 `07:00`：更新成份股价格、重新计算近期市场宽度、更新 Call Skew、VIX、Fear & Greed。
-- 每周六北京时间 `04:00`：更新 CFTC COT 持仓数据。
+- 每天北京时间 `07:00`：更新成份股价格、重新计算近期市场宽度、更新 Call Skew、VIX、Fear & Greed、三信号框架（QQQ 回撤 + CAPE 分位）。
 
 ## 首次初始化
 
@@ -127,7 +128,7 @@ ADMIN_TOKEN=your-token ~/.local/bin/uv run python run.py
 后台能力：
 
 - 查看各数据源最新日期和记录数。
-- 手动触发 MA 宽度、Call Skew、VIX、COT、Fear & Greed 更新。
+- 手动触发 MA 宽度、Call Skew、VIX、Fear & Greed、三信号更新。
 - 查看运行日志。
 - 新增、编辑、删除市场规律。
 
@@ -159,6 +160,7 @@ print('done')
 GET /health
 
 GET /api/indicators/overview
+GET /api/indicators/daily-status?range=1y
 
 GET /api/breadth/current
 GET /api/breadth/history?ma=50&range=1y
@@ -169,9 +171,6 @@ GET /api/vix/history?range=1y
 
 GET /api/fng/current
 GET /api/fng/history?range=1y
-
-GET /api/cot/current
-GET /api/cot/history?range=1y
 
 GET /api/call-skew/current
 GET /api/call-skew/history?range=1y
@@ -194,8 +193,8 @@ GET    /api/admin/logs
 POST   /api/admin/update/breadth
 POST   /api/admin/update/call-skew
 POST   /api/admin/update/vix
-POST   /api/admin/update/cot
 POST   /api/admin/update/fng
+POST   /api/admin/update/three-signals
 
 GET    /api/admin/rules
 POST   /api/admin/rules
@@ -218,7 +217,6 @@ stock/
 │   │   │   ├── indicators.py       # 首页指标总览接口
 │   │   │   ├── vix.py              # VIX 接口
 │   │   │   ├── fng.py              # Fear & Greed 接口
-│   │   │   ├── cot.py              # COT/CTA 持仓接口
 │   │   │   ├── call_skew.py        # QQQ Call Skew 接口
 │   │   │   └── admin.py            # 后台状态、日志、更新、市场规律
 │   │   └── services/
@@ -227,7 +225,6 @@ stock/
 │   │       ├── calculator.py       # 市场宽度计算
 │   │       ├── vix_fetcher.py      # VIX 拉取
 │   │       ├── fng_fetcher.py      # Fear & Greed 拉取
-│   │       ├── cot_fetcher.py      # CFTC COT 拉取
 │   │       └── call_skew.py        # QQQ 期权偏斜计算
 │   ├── init_data.py                # 一次性初始化脚本
 │   ├── run.py                      # 本地启动脚本
@@ -266,3 +263,91 @@ cd ../backend
 ```
 
 构建产物存在时，`backend/app/main.py` 会挂载 `/assets` 并把非 API 路由回退到 `index.html`。
+
+## 使用标准 HTTPS 域名
+
+当前使用 Cloudflare Tunnel，把 `https://f.yanwei99521.dpdns.org` 转发到本机的 `http://127.0.0.1:8000`。这种方式不需要开放路由器端口，不受公网 IPv4/IPv6 地址变化影响，也不需要继续运行 AAAA 动态解析任务。
+
+### 1. 构建生产前端
+
+```bash
+cd frontend
+pnpm build
+```
+
+### 2. 在 Cloudflare 创建 Tunnel
+
+在 Cloudflare Zero Trust 中进入 `Networks > Tunnels`：
+
+1. 创建名为 `stock-dashboard` 的 Cloudflared Tunnel。
+2. 添加 Public Hostname：`f.yanwei99521.dpdns.org`。
+3. Service Type 选择 `HTTP`，URL 填写 `127.0.0.1:8000`。
+4. 复制 Cloudflare 提供的 Tunnel token。
+
+把 token 保存到本机用户目录，文件不会进入项目仓库：
+
+```bash
+cat > ~/.stock-tunnel.env <<'EOF'
+export TUNNEL_TOKEN="粘贴 Cloudflare Tunnel token"
+EOF
+chmod 600 ~/.stock-tunnel.env
+```
+
+同时为公网管理后台设置独立强密码：
+
+```bash
+cat > ~/.stock-dashboard.env <<'EOF'
+export ADMIN_TOKEN="替换为独立强密码"
+EOF
+chmod 600 ~/.stock-dashboard.env
+```
+
+### 3. 设置登录后自动运行
+
+项目提供两个 macOS LaunchAgent：一个运行仪表盘，一个维持 Cloudflare Tunnel。
+
+```bash
+install -m 755 scripts/stock_dashboard_server.sh \
+  ~/.local/bin/stock-dashboard-server
+install -m 755 scripts/cloudflare_tunnel.sh \
+  ~/.local/bin/stock-dashboard-tunnel
+
+cp scripts/com.stock-dashboard.server.plist.example \
+  ~/Library/LaunchAgents/com.stock-dashboard.server.plist
+cp scripts/com.stock-dashboard.cloudflare-tunnel.plist.example \
+  ~/Library/LaunchAgents/com.stock-dashboard.cloudflare-tunnel.plist
+
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.stock-dashboard.server.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.stock-dashboard.cloudflare-tunnel.plist
+
+launchctl kickstart -k gui/$(id -u)/com.stock-dashboard.server
+launchctl kickstart -k gui/$(id -u)/com.stock-dashboard.cloudflare-tunnel
+```
+
+服务启动后访问：
+
+```text
+https://f.yanwei99521.dpdns.org
+```
+
+本机健康检查：
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+日志位置：
+
+```text
+/tmp/stock-dashboard-server.log
+/tmp/stock-dashboard-server.err
+/tmp/stock-dashboard-tunnel.log
+/tmp/stock-dashboard-tunnel.err
+```
+
+注意：
+
+- `cloudflared` 通过出站连接接入 Cloudflare，不需要在路由器或 macOS 防火墙开放入站端口。
+- 仪表盘服务只监听 `127.0.0.1:8000`，局域网和公网不能绕过 Tunnel 直连。
+- 建议在 Cloudflare Access 中为 `/admin` 增加邮箱或一次性验证码认证。
+- 原有 `cloudflare_ipv6_ddns.py` 仅保留给需要 IPv6 直连的场景，使用 Tunnel 时不要启用对应 LaunchAgent。

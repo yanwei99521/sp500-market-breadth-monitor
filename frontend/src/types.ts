@@ -41,11 +41,6 @@ export interface CallSkewCurrent {
   is_signal: boolean;
 }
 
-export interface CotPoint {
-  date: string;
-  net_long: number; // raw contracts (long - short)
-}
-
 export interface VixPoint {
   date: string;
   close: number;
@@ -62,12 +57,37 @@ export interface VixCurrent {
   zone: "sell" | "normal" | "buy" | "buy_strong";
 }
 
-export interface CotCurrent {
+export interface ThreeSignalItem {
+  id: string;
+  name: string;
+  date: string | null;
+  value: number | null;
+  display_value: string;
+  zone: string;
+  status_label: string;
+  is_active: boolean;
+  description: string;
+}
+
+export interface ThreeSignalStatus {
+  date: string | null;
+  active_count: number;
+  action_label: string;
+  action_description: string;
+  items: ThreeSignalItem[];
+}
+
+export interface CapePoint {
   date: string;
-  long_contracts: number;
-  short_contracts: number;
-  net_long: number;
-  open_interest: number;
+  cape: number;
+  percentile: number;
+}
+
+export interface QqqDrawdownPoint {
+  date: string;
+  close: number;
+  drawdown: number;
+  return_25d: number | null;
 }
 
 export interface FngPoint {
@@ -84,6 +104,26 @@ export interface FngCurrent {
   previous_1_week: number;
   previous_1_month: number;
   previous_1_year: number;
+}
+
+export type DailyIndicatorStatus = "buy" | "sell" | "normal";
+
+export interface DailyIndicatorCell {
+  value: number | null;
+  display_value: string;
+  status: DailyIndicatorStatus;
+  source_date: string | null;
+  status_label?: string;
+}
+
+export interface DailyStatusRow {
+  date: string;
+  indicators: Record<string, DailyIndicatorCell>;
+}
+
+export interface DailyStatusResponse {
+  range: TimeRange;
+  rows: DailyStatusRow[];
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
