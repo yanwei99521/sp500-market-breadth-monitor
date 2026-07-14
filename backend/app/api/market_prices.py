@@ -31,6 +31,13 @@ def get_price_history(
     start = (date.today() - timedelta(days=days)).isoformat()
     rows = market_prices.history(symbol, start)
     return [
-        {"ticker": symbol, "date": row["date"], "close": round(float(row["close"]), 4)}
+        {
+            "ticker": symbol,
+            "date": row["date"],
+            "open": round(float(row["open"]), 4),
+            "high": round(float(row["high"]), 4),
+            "low": round(float(row["low"]), 4),
+            "close": round(float(row["close"]), 4),
+        }
         for row in rows
     ]

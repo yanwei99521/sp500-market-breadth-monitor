@@ -86,6 +86,9 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS market_price_history (
                 ticker TEXT NOT NULL,
                 date   DATE NOT NULL,
+                open   REAL,
+                high   REAL,
+                low    REAL,
                 close  REAL NOT NULL,
                 PRIMARY KEY (ticker, date)
             );
@@ -154,3 +157,8 @@ def init_db() -> None:
                 updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(market_price_history)")}
+        for column in ("open", "high", "low"):
+            if column not in columns:
+                conn.execute(f"ALTER TABLE market_price_history ADD COLUMN {column} REAL")
+        conn.commit()
