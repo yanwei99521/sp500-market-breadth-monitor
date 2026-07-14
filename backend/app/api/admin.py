@@ -8,6 +8,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
+from threading import Lock
 
 from fastapi import APIRouter, Depends, HTTPException, Header
 
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/admin")
 
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "stock-admin")
+_all_update_lock = Lock()
 
 
 def _require_auth(x_admin_token: str | None = Header(default=None)) -> None:
@@ -52,6 +54,7 @@ def get_status(_: None = Depends(_require_auth)):
         fng_date, fng_count = _query("fng_history", "date")
         qqq_date, qqq_count = _query("qqq_history", "date")
         cape_date, cape_count = _query("cape_history", "month")
+        panic_date, panic_count = _query("panic_strategy_history", "date")
 
     return AdminStatus(
         sources=[
@@ -66,6 +69,8 @@ def get_status(_: None = Depends(_require_auth)):
             DataSourceStatus(id="three-signals", name="三信号框架（QQQ/CAPE）",
                              last_date=max([d for d in [qqq_date, cape_date] if d], default=None),
                              row_count=qqq_count + cape_count),
+            DataSourceStatus(id="panic-strategy", name="QQQ 恐慌策略回测（1999至今）",
+                             last_date=panic_date, row_count=panic_count),
             DataSourceStatus(id="prices", name="个股价格（daily_prices）",
                              last_date=pr_date, row_count=pr_count),
         ]
@@ -75,6 +80,10 @@ def get_status(_: None = Depends(_require_auth)):
 # ── Logs ──────────────────────────────────────────────────────────────────────
 
 LOG_DIR = Path(__file__).parent.parent.parent / "logs"
+RUNTIME_LOG_FILES = (
+    Path("/tmp/stock-dashboard-server.err"),
+    Path("/tmp/stock-dashboard-server.log"),
+)
 
 
 def _parse_log_line(line: str) -> LogEntry | None:
@@ -101,12 +110,16 @@ def get_logs(
     level: str | None = None,
     _: None = Depends(_require_auth),
 ):
-    """Return the most recent log lines from backend.log and backend-error.log."""
+    """Return the most recent application log lines from development and production logs."""
     tail = min(max(tail, 1), 500)  # clamp 1-500
     entries: list[LogEntry] = []
 
-    for log_file in ["backend.log", "backend-error.log"]:
-        path = LOG_DIR / log_file
+    log_files = (
+        LOG_DIR / "backend.log",
+        LOG_DIR / "backend-error.log",
+        *RUNTIME_LOG_FILES,
+    )
+    for path in dict.fromkeys(log_files):
         if not path.exists():
             continue
         # Read last N lines efficiently
@@ -146,7 +159,9 @@ def update_breadth(_: None = Depends(_require_auth)):
             tickers = sp500.refresh()
         fetcher.update_incremental(tickers)
         calculator.run_incremental_calculation()
-        return {"ok": True, "message": "宽度数据更新完成"}
+        message = "宽度数据更新完成"
+        logger.info("Manual update: %s", message)
+        return {"ok": True, "message": message}
     except Exception as e:
         logger.exception("Manual breadth update failed")
         raise HTTPException(status_code=500, detail=str(e))
@@ -158,7 +173,9 @@ def update_call_skew(_: None = Depends(_require_auth)):
     from app.services import call_skew
     try:
         call_skew.fetch_and_store()
-        return {"ok": True, "message": "Call Skew 更新完成"}
+        message = "Call Skew 更新完成"
+        logger.info("Manual update: %s", message)
+        return {"ok": True, "message": message}
     except Exception as e:
         logger.exception("Manual call-skew update failed")
         raise HTTPException(status_code=500, detail=str(e))
@@ -170,7 +187,9 @@ def update_vix(_: None = Depends(_require_auth)):
     from app.services import vix_fetcher
     try:
         n = vix_fetcher.fetch_and_store()
-        return {"ok": True, "message": f"VIX 数据更新完成，共处理 {n} 条记录"}
+        message = f"VIX 数据更新完成，共处理 {n} 条记录"
+        logger.info("Manual update: %s", message)
+        return {"ok": True, "message": message}
     except Exception as e:
         logger.exception("Manual VIX update failed")
         raise HTTPException(status_code=500, detail=str(e))
@@ -182,7 +201,9 @@ def update_fng(_: None = Depends(_require_auth)):
     from app.services import fng_fetcher
     try:
         n = fng_fetcher.fetch_and_store()
-        return {"ok": True, "message": f"Fear & Greed 数据更新完成，共处理 {n} 条记录"}
+        message = f"Fear & Greed 数据更新完成，共处理 {n} 条记录"
+        logger.info("Manual update: %s", message)
+        return {"ok": True, "message": message}
     except Exception as e:
         logger.exception("Manual F&G update failed")
         raise HTTPException(status_code=500, detail=str(e))
@@ -194,13 +215,88 @@ def update_three_signals(_: None = Depends(_require_auth)):
     from app.services import three_signals
     try:
         result = three_signals.fetch_and_store()
-        return {
-            "ok": True,
-            "message": f"三信号数据更新完成：QQQ {result['qqq']} 条，CAPE {result['cape']} 条",
-        }
+        message = f"三信号数据更新完成：QQQ {result['qqq']} 条，CAPE {result['cape']} 条"
+        logger.info("Manual update: %s", message)
+        return {"ok": True, "message": message}
     except Exception as e:
         logger.exception("Manual three-signals update failed")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/update/all")
+def update_all(_: None = Depends(_require_auth)):
+    """Run every dashboard data update in the same order as the daily scheduler."""
+    if not _all_update_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="已有一键更新任务正在运行")
+
+    try:
+        from app.services import calculator, call_skew, fetcher, fng_fetcher, market_prices, panic_strategy, sp500, three_signals, vix_fetcher
+
+        def update_breadth_data() -> str:
+            tickers = sp500.get_tickers()
+            if not tickers:
+                tickers = sp500.refresh()
+            fetcher.update_incremental(tickers)
+            calculator.run_incremental_calculation()
+            return "宽度与价格更新完成"
+
+        def update_call_skew_data() -> str:
+            call_skew.fetch_and_store()
+            return "Call Skew 更新完成"
+
+        def update_vix_data() -> str:
+            count = vix_fetcher.fetch_and_store()
+            return f"VIX 更新完成（{count} 条）"
+
+        def update_fng_data() -> str:
+            count = fng_fetcher.fetch_and_store()
+            return f"Fear & Greed 更新完成（{count} 条）"
+
+        def update_three_signals_data() -> str:
+            result = three_signals.fetch_and_store()
+            return f"三信号更新完成（QQQ {result['qqq']} 条，CAPE {result['cape']} 条）"
+
+        def update_market_price_data() -> str:
+            result = market_prices.fetch_all()
+            return "首页ETF走势图更新完成（" + "，".join(f"{ticker} {count} 条" for ticker, count in result.items()) + "）"
+
+        def update_panic_strategy_data() -> str:
+            source_rows = panic_strategy.ensure_strategy_sources()
+            payload = panic_strategy.calculate_and_store()
+            return f"QQQ 恐慌策略更新完成（{payload['start_date']} 至 {payload['end_date']}；数据新增 {sum(source_rows.values())} 条）"
+
+        updates = [
+            ("宽度与价格", update_breadth_data),
+            ("Call Skew", update_call_skew_data),
+            ("VIX", update_vix_data),
+            ("Fear & Greed", update_fng_data),
+            ("三信号", update_three_signals_data),
+            ("首页ETF走势图", update_market_price_data),
+            ("QQQ 恐慌策略", update_panic_strategy_data),
+        ]
+        results: list[dict[str, str | bool]] = []
+
+        logger.info("=== Manual all-data update started ===")
+        for name, run_update in updates:
+            try:
+                step_message = run_update()
+                logger.info("Manual all-data update: %s", step_message)
+                results.append({"name": name, "ok": True, "message": step_message})
+            except Exception as exc:
+                logger.exception("Manual all-data update failed at %s", name)
+                results.append({"name": name, "ok": False, "message": str(exc)})
+
+        failed = [result["name"] for result in results if not result["ok"]]
+        if failed:
+            message = f"一键更新完成，但 {len(failed)} 项失败：{'、'.join(failed)}"
+            logger.warning("=== %s ===", message)
+        else:
+            message = "一键更新全部完成"
+            logger.info("=== %s ===", message)
+
+        return {"ok": not failed, "message": message, "results": results}
+    finally:
+        _all_update_lock.release()
 
 
 # ── Market Rules CRUD ─────────────────────────────────────────────────────────

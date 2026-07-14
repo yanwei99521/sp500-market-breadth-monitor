@@ -12,6 +12,8 @@ from app.api.breadth import router as breadth_router
 from app.api.call_skew import router as call_skew_router
 from app.api.fng import router as fng_router
 from app.api.indicators import router as indicators_router
+from app.api.market_prices import router as market_prices_router
+from app.api.panic_strategy import router as panic_strategy_router
 from app.api.three_signals import router as three_signals_router
 from app.api.vix import router as vix_router
 from app.database import init_db
@@ -39,7 +41,9 @@ app.include_router(call_skew_router)
 app.include_router(fng_router)
 app.include_router(vix_router)
 app.include_router(indicators_router)
+app.include_router(market_prices_router)
 app.include_router(three_signals_router)
+app.include_router(panic_strategy_router)
 app.include_router(admin_router)
 
 

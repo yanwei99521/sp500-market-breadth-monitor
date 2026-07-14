@@ -118,7 +118,7 @@ export function useMarketRules(token: string) {
 export async function triggerUpdate(
   source: string,
   token: string,
-): Promise<{ ok: boolean; message: string }> {
+): Promise<{ ok: boolean; message: string; results?: Array<{ name: string; ok: boolean; message: string }> }> {
   return adminFetch(`${BASE}/update/${source}`, token, { method: "POST" });
 }
 

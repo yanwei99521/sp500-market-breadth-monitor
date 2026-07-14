@@ -46,6 +46,13 @@ def _save_prices(rows: list[dict]) -> int:
     return len(rows)
 
 
+def _format_price_date(value: object) -> str:
+    """Normalize yfinance index values, which may be dates or ISO date strings."""
+    if hasattr(value, "date"):
+        return str(value.date())
+    return str(value)[:10]
+
+
 def fetch_batch(tickers: list[str], start: str, end: str) -> dict[str, list[dict]]:
     """Download close prices for a batch of tickers. Returns {ticker: [{date, close}]}."""
     joined = " ".join(tickers)
@@ -83,28 +90,32 @@ def fetch_batch(tickers: list[str], start: str, end: str) -> dict[str, list[dict
             logger.error("All retries exhausted for batch %s: %s", tickers[:3], last_exc)
         return {}
 
-    # Multi-ticker download → MultiIndex columns (Close, ticker)
-    # Single ticker → simple columns
+    # yfinance may use MultiIndex columns even for a single ticker.
     result: dict[str, list[dict]] = {}
+    close_col = "Close" if "Close" in df.columns.get_level_values(0) else df.columns[0]
+    close_data = df[close_col]
 
     if len(tickers) == 1:
         ticker = tickers[0]
-        close_col = "Close" if "Close" in df.columns else df.columns[0]
-        series = df[close_col].dropna()
+        if hasattr(close_data, "columns"):
+            if ticker not in close_data.columns:
+                return result
+            series = close_data[ticker].dropna()
+        else:
+            series = close_data.dropna()
         result[ticker] = [
-            {"ticker": ticker, "date": str(d.date()), "close": float(v)}
+            {"ticker": ticker, "date": _format_price_date(d), "close": float(v)}
             for d, v in series.items()
         ]
     else:
-        if "Close" not in df.columns.get_level_values(0):
+        if not hasattr(close_data, "columns"):
             return {}
-        close_df = df["Close"]
         for ticker in tickers:
-            if ticker not in close_df.columns:
+            if ticker not in close_data.columns:
                 continue
-            series = close_df[ticker].dropna()
+            series = close_data[ticker].dropna()
             result[ticker] = [
-                {"ticker": ticker, "date": str(d.date()), "close": float(v)}
+                {"ticker": ticker, "date": _format_price_date(d), "close": float(v)}
                 for d, v in series.items()
             ]
 
@@ -138,12 +149,19 @@ def backfill_all(tickers: list[str]) -> None:
 
 def update_incremental(tickers: list[str]) -> None:
     """Fetch only missing data since last stored date for each ticker."""
-    # Find the global minimum latest date to use as a safe start
+    if not tickers:
+        logger.warning("No tickers supplied for incremental price update")
+        return
+
+    # Only current constituents determine freshness. Historical rows for removed
+    # members must not force every future update to re-download old dates.
+    placeholders = ", ".join("?" for _ in tickers)
     with get_conn() as conn:
         row = conn.execute(
             "SELECT MIN(d) as min_date FROM ("
-            "  SELECT MAX(date) as d FROM daily_prices GROUP BY ticker"
-            ")"
+            f"  SELECT MAX(date) as d FROM daily_prices WHERE ticker IN ({placeholders}) GROUP BY ticker"
+            ")",
+            tickers,
         ).fetchone()
 
     if not row or not row["min_date"]:

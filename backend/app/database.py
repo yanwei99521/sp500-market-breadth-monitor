@@ -83,10 +83,63 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_qqq_date
                 ON qqq_history(date);
 
+            CREATE TABLE IF NOT EXISTS market_price_history (
+                ticker TEXT NOT NULL,
+                date   DATE NOT NULL,
+                close  REAL NOT NULL,
+                PRIMARY KEY (ticker, date)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_market_price_history_ticker_date
+                ON market_price_history(ticker, date);
+
             CREATE TABLE IF NOT EXISTS cape_history (
                 month      TEXT NOT NULL PRIMARY KEY,
                 cape       REAL NOT NULL,
                 percentile REAL NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS tqqq_history (
+                date  DATE NOT NULL PRIMARY KEY,
+                close REAL NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS risk_free_history (
+                date      DATE NOT NULL PRIMARY KEY,
+                yield_pct REAL NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS panic_strategy_history (
+                date                     DATE NOT NULL PRIMARY KEY,
+                qqq_close                REAL NOT NULL,
+                vix                      REAL,
+                drawdown                 REAL NOT NULL,
+                state                    TEXT NOT NULL,
+                panic_level              INTEGER NOT NULL,
+                target_qqq_weight        REAL NOT NULL,
+                target_tqqq_weight       REAL NOT NULL,
+                target_cash_weight       REAL NOT NULL,
+                actual_qqq_weight        REAL NOT NULL,
+                actual_tqqq_weight       REAL NOT NULL,
+                actual_cash_weight       REAL NOT NULL,
+                portfolio_value          REAL NOT NULL,
+                portfolio_drawdown       REAL NOT NULL,
+                transaction_cost         REAL NOT NULL,
+                turnover                 REAL NOT NULL,
+                qqq_benchmark_value      REAL NOT NULL,
+                tqqq_benchmark_value     REAL NOT NULL,
+                balanced_benchmark_value REAL NOT NULL,
+                action                   TEXT NOT NULL,
+                reason                   TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_panic_strategy_date
+                ON panic_strategy_history(date);
+
+            CREATE TABLE IF NOT EXISTS panic_strategy_summary (
+                id            INTEGER PRIMARY KEY CHECK (id = 1),
+                calculated_at DATETIME NOT NULL,
+                payload       TEXT NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS market_rules (

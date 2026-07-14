@@ -9,7 +9,11 @@ import type {
   FngCurrent,
   FngPoint,
   MaPeriod,
+  MarketPricePoint,
+  MarketPriceTicker,
   MarketRule,
+  PanicBacktestResponse,
+  PanicStrategyCurrent,
   QqqDrawdownPoint,
   SignalPoint,
   ThreeSignalStatus,
@@ -223,6 +227,38 @@ export function useThreeSignalStatus() {
   return { data, loading, error };
 }
 
+export function usePanicStrategyCurrent() {
+  const [data, setData] = useState<PanicStrategyCurrent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchJson<PanicStrategyCurrent>(`${BASE}/panic-strategy/current`)
+      .then((result) => {
+        setData(result);
+        setError(null);
+      })
+      .catch((err: unknown) => setError(String(err)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading, error };
+}
+
+export function usePanicStrategyBacktest() {
+  const [data, setData] = useState<PanicBacktestResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchJson<PanicBacktestResponse>(`${BASE}/panic-strategy/backtest`)
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading };
+}
+
 export function useCapeHistory(range: TimeRange = "all") {
   const [data, setData] = useState<CapePoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,6 +291,28 @@ export function useQqqDrawdownHistory(range: TimeRange = "all") {
   }, [range]);
 
   return { data, loading };
+}
+
+export function useMarketPriceHistory(ticker: MarketPriceTicker, range: TimeRange = "1y") {
+  const [data, setData] = useState<MarketPricePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchJson<MarketPricePoint[]>(`${BASE}/market-prices/history?ticker=${ticker}&range=${range}`)
+      .then((d) => {
+        setData(d);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        setError(String(e));
+        setLoading(false);
+      });
+  }, [ticker, range]);
+
+  return { data, loading, error };
 }
 
 export function useMarketRules() {

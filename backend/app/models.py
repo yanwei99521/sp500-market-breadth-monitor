@@ -139,6 +139,90 @@ class QqqDrawdownPoint(BaseModel):
     return_25d: float | None
 
 
+class PanicAllocation(BaseModel):
+    qqq: float
+    tqqq: float
+    cash: float
+
+
+class PanicStrategyCurrent(BaseModel):
+    date: str
+    state: str
+    state_label: str
+    panic_level: int
+    vix: float | None
+    qqq_close: float
+    drawdown: float
+    target: PanicAllocation
+    actual: PanicAllocation
+    portfolio_value: float
+    portfolio_drawdown: float
+    action: str
+    reason: str
+
+
+class PanicMetric(BaseModel):
+    id: str
+    name: str
+    terminal_value: float
+    cagr: float
+    max_drawdown: float
+    calmar: float | None
+    sharpe: float | None
+    annual_volatility: float
+    worst_year: float
+    transaction_cost: float
+    turnover: float
+    cash_occupancy: float
+
+
+class PanicCrisisReview(BaseModel):
+    id: str
+    name: str
+    start: str
+    end: str
+    strategy_return: float
+    qqq_return: float
+    strategy_max_drawdown: float
+
+
+class PanicSensitivityResult(BaseModel):
+    drawdown_shift: float
+    vix_shift: float
+    tqqq_cap: float
+    terminal_value: float
+    max_drawdown: float
+    cagr: float
+
+
+class PanicBacktestResponse(BaseModel):
+    start_date: str
+    end_date: str
+    initial_capital: float
+    metrics: list[PanicMetric]
+    crises: list[PanicCrisisReview]
+    sensitivity: list[PanicSensitivityResult]
+    assumptions: list[str]
+
+
+class PanicHistoryPoint(BaseModel):
+    date: str
+    vix: float | None
+    qqq_drawdown: float
+    portfolio_value: float
+    portfolio_drawdown: float
+    qqq_benchmark_value: float
+    tqqq_benchmark_value: float
+    balanced_benchmark_value: float
+    panic_level: int
+    state: str
+    qqq_weight: float
+    tqqq_weight: float
+    cash_weight: float
+    transaction_cost: float
+    action: str
+
+
 # ── Admin ────────────────────────────────────────────────────────────────────
 
 class MarketRule(BaseModel):

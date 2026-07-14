@@ -63,6 +63,12 @@ http://localhost:8000/health
 
 首页提供“全局每日状态”表，默认展示最近 1 年交易日，每天一行、每个指标一列。单元格显示指标数值和状态：绿色代表买入倾向，红色代表减仓/风险控制倾向，灰色代表正常；Fear & Greed 会按五档区间显示具体操作含义。周度或缺失数据会沿用上一条有效值，并保留原始数据日期。
 
+### 5. QQQ 恐慌策略回测
+
+首页显示一套从 1999-03-10 开始、初始本金为 `$100,000` 的 QQQ 恐慌买入模型。它以 QQQ 历史回撤与 VIX 共同划分四档恐慌状态，并使用 QQQ、TQQQ 和现金的目标仓位管理风险；信号在收盘后生成，统一延迟至下一交易日收盘成交。回测同时纳入 QQQ/TQQQ 单边交易成本、三个月国债现金利息、TQQQ 上市前的 3 倍合成收益及融资成本。
+
+模型结果用于研究，不代表未来收益或实际账户持仓。首页会同时展示策略终值、最大回撤及 QQQ 全仓基准，避免只展示单一有利指标。
+
 ## 数据来源和更新
 
 | 数据 | 来源 | 存储表 |
@@ -73,6 +79,9 @@ http://localhost:8000/health
 | VIX | yfinance `^VIX` | `vix_history` |
 | Fear & Greed | CNN 接口 | `fng_history` |
 | QQQ Call Skew | yfinance 期权链 | `call_skew_history` |
+| TQQQ 复权收盘价 | yfinance | `tqqq_history` |
+| 三个月国债收益率 | FRED `DGS3MO` | `risk_free_history` |
+| QQQ 恐慌策略 | 本地回测引擎 | `panic_strategy_history` |
 | 市场规律 | 管理后台手工维护 | `market_rules` |
 
 数据库是 SQLite：
@@ -83,7 +92,7 @@ backend/stock.db
 
 定时任务：
 
-- 每天北京时间 `07:00`：更新成份股价格、重新计算近期市场宽度、更新 Call Skew、VIX、Fear & Greed、三信号框架（QQQ 回撤 + CAPE 分位）。
+- 每天北京时间 `07:00`：更新成份股价格、重新计算近期市场宽度、更新 Call Skew、VIX、Fear & Greed、三信号框架，以及 QQQ 恐慌策略所需的 VIX、TQQQ、短期利率与回测状态。
 
 ## 首次初始化
 
@@ -128,9 +137,11 @@ ADMIN_TOKEN=your-token ~/.local/bin/uv run python run.py
 后台能力：
 
 - 查看各数据源最新日期和记录数。
-- 手动触发 MA 宽度、Call Skew、VIX、Fear & Greed、三信号更新。
+- 一键按完整顺序更新价格宽度、Call Skew、VIX、Fear & Greed、三信号与 QQQ 恐慌策略；单项更新仍可独立执行。
 - 查看运行日志。
 - 新增、编辑、删除市场规律。
+
+定时更新：每日 07:00（北京时间）更新市场数据；每周一 10:00（北京时间）同步标普500成分股。新增成分股会补齐约 250 日价格历史，移除成分股不再参与后续宽度计算。
 
 ### 通过脚本
 
@@ -175,6 +186,10 @@ GET /api/fng/history?range=1y
 GET /api/call-skew/current
 GET /api/call-skew/history?range=1y
 
+GET /api/panic-strategy/current
+GET /api/panic-strategy/backtest
+GET /api/panic-strategy/history?range=1y
+
 GET /api/admin/rules/public
 ```
 
@@ -195,6 +210,7 @@ POST   /api/admin/update/call-skew
 POST   /api/admin/update/vix
 POST   /api/admin/update/fng
 POST   /api/admin/update/three-signals
+POST   /api/admin/update/all
 
 GET    /api/admin/rules
 POST   /api/admin/rules

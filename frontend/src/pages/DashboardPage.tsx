@@ -1,9 +1,11 @@
 import { INDICATORS } from "../config/indicators";
 import DailyStatusTable from "../components/DailyStatusTable";
 import IndicatorCard from "../components/IndicatorCard";
+import MarketPriceChartPanel from "../components/MarketPriceChartPanel";
 import MarketRulesSection from "../components/MarketRulesSection";
 import SentimentCard from "../components/SentimentCard";
 import ThreeSignalPanel from "../components/ThreeSignalPanel";
+import PanicStrategyPanel from "../components/PanicStrategyPanel";
 import { useIndicatorsOverview } from "../hooks/useBreadth";
 import type { IndicatorOverview } from "../types/indicator";
 
@@ -65,7 +67,11 @@ export default function DashboardPage() {
         )}
       </section>
 
+      <MarketPriceChartPanel />
+
       <ThreeSignalPanel />
+
+      <PanicStrategyPanel />
 
       {/* Dual confirmation banner */}
       {dualConfirmed && (

@@ -90,6 +90,58 @@ export interface QqqDrawdownPoint {
   return_25d: number | null;
 }
 
+export type MarketPriceTicker = "QQQ" | "SPY" | "SOXL";
+
+export interface MarketPricePoint {
+  ticker: MarketPriceTicker;
+  date: string;
+  close: number;
+}
+
+export interface PanicAllocation {
+  qqq: number;
+  tqqq: number;
+  cash: number;
+}
+
+export interface PanicStrategyCurrent {
+  date: string;
+  state: string;
+  state_label: string;
+  panic_level: number;
+  vix: number | null;
+  qqq_close: number;
+  drawdown: number;
+  target: PanicAllocation;
+  actual: PanicAllocation;
+  portfolio_value: number;
+  portfolio_drawdown: number;
+  action: string;
+  reason: string;
+}
+
+export interface PanicMetric {
+  id: string;
+  name: string;
+  terminal_value: number;
+  cagr: number;
+  max_drawdown: number;
+  calmar: number | null;
+  sharpe: number | null;
+  annual_volatility: number;
+  worst_year: number;
+  transaction_cost: number;
+  turnover: number;
+  cash_occupancy: number;
+}
+
+export interface PanicBacktestResponse {
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  metrics: PanicMetric[];
+}
+
 export interface FngPoint {
   date: string;
   score: number;

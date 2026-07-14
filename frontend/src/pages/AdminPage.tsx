@@ -48,8 +48,7 @@ function AuthGate({ onAuth }: { onAuth: (token: string) => void }) {
           </button>
         </form>
         <p className="text-xs text-zinc-400 text-center">
-          默认密码：<code className="bg-zinc-100 px-1 rounded">stock-admin</code>
-          &nbsp;（可通过环境变量 ADMIN_TOKEN 修改）
+          管理员密码由服务器的 <code className="bg-zinc-100 px-1 rounded">ADMIN_TOKEN</code> 配置
         </p>
       </div>
     </main>
@@ -81,6 +80,8 @@ const UPDATE_SOURCES = [
   { id: "three-signals", label: "三信号" },
 ];
 
+const ALL_UPDATE_ID = "all";
+
 function StatusSection({ token, onUnauth, onSwitchTab }: { token: string; onUnauth: () => void; onSwitchTab: (tab: string) => void }) {
   const { data, loading, error, refresh } = useAdminStatus(token);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -96,7 +97,7 @@ function StatusSection({ token, onUnauth, onSwitchTab }: { token: string; onUnau
     setUpdateMsg(null);
     try {
       const res = await triggerUpdate(sourceId, token);
-      setUpdateMsg({ id: sourceId, msg: res.message, ok: true });
+      setUpdateMsg({ id: sourceId, msg: res.message, ok: res.ok });
       refresh();
     } catch (e: unknown) {
       setUpdateMsg({
@@ -107,21 +108,37 @@ function StatusSection({ token, onUnauth, onSwitchTab }: { token: string; onUnau
     } finally {
       setUpdating(null);
     }
-    // After update completes, switch to logs tab
-    onSwitchTab("logs");
+    // Keep the all-update result visible; individual updates still open the logs view.
+    if (sourceId !== ALL_UPDATE_ID) onSwitchTab("logs");
   };
 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs text-zinc-400 uppercase tracking-wider">数据状态与手工更新</h2>
-        <button
-          onClick={refresh}
-          className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
-        >
-          刷新
-        </button>
+        <h2 className="text-xs text-zinc-400 uppercase tracking-wider">数据状态与更新</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleUpdate(ALL_UPDATE_ID)}
+            disabled={updating !== null}
+            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-wait disabled:bg-zinc-400"
+          >
+            {updating === ALL_UPDATE_ID ? "全部更新中…" : "一键更新全部"}
+          </button>
+          <button
+            onClick={refresh}
+            disabled={updating !== null}
+            className="text-xs text-zinc-400 transition-colors hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            刷新
+          </button>
+        </div>
       </div>
+
+      {updateMsg?.id === ALL_UPDATE_ID && (
+        <p className={`text-xs ${updateMsg.ok ? "text-green-600" : "text-red-500"}`}>
+          {updateMsg.msg}
+        </p>
+      )}
 
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
