@@ -1,6 +1,7 @@
 import { INDICATORS } from "../config/indicators";
 import DailyStatusTable from "../components/DailyStatusTable";
 import IndicatorCard from "../components/IndicatorCard";
+import GlobalMarketTicker from "../components/GlobalMarketTicker";
 import MarketPriceChartPanel from "../components/MarketPriceChartPanel";
 import MarketRulesSection from "../components/MarketRulesSection";
 import SentimentCard from "../components/SentimentCard";
@@ -46,6 +47,8 @@ export default function DashboardPage() {
           </code>
         </div>
       )}
+
+      <GlobalMarketTicker />
 
       {/* Sentiment indicators (VIX + F&G) — top row */}
       <section>

@@ -20,9 +20,9 @@ import type { MarketPriceTicker, TimeRange } from "../types";
 const TICKERS: MarketPriceTicker[] = ["QQQ", "SPY", "SOXL"];
 const RANGES: TimeRange[] = ["1m", "3m", "6m", "1y", "3y", "all"];
 const MOVING_AVERAGES = [
+  { window: 5, label: "MA5", color: "#dc2626" },
   { window: 55, label: "MA55", color: "#2563eb" },
-  { window: 200, label: "MA200", color: "#dc2626" },
-  { window: 233, label: "MA233", color: "#9333ea" },
+  { window: 233, label: "MA233", color: "#eab308" },
   { window: 610, label: "MA610", color: "#059669" },
 ] as const;
 const MACD_PANIC_BUY_THRESHOLD = -0.25;
@@ -267,7 +267,7 @@ export default function MarketPriceChartPanel() {
       rightPriceScale: { borderColor: "#e5e7eb", scaleMargins: { top: 0.08, bottom: 0.08 } },
       timeScale: { borderColor: "#e5e7eb", timeVisible: false },
       width: containerRef.current.clientWidth,
-      height: 320,
+      height: 400,
     });
 
     const series = chart.addSeries(CandlestickSeries, {
@@ -287,7 +287,7 @@ export default function MarketPriceChartPanel() {
     tdSequentialMarkersRef.current = createSeriesMarkers(series, []);
     movingAverageSeriesRef.current = MOVING_AVERAGES.map((average) => chart.addSeries(LineSeries, {
       color: average.color,
-      lineWidth: 1,
+      lineWidth: average.window === 55 || average.window === 233 ? 3 : 1,
       priceLineVisible: false,
       lastValueVisible: false,
       crosshairMarkerVisible: false,

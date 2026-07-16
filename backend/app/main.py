@@ -11,6 +11,7 @@ from app.api.admin import router as admin_router
 from app.api.breadth import router as breadth_router
 from app.api.call_skew import router as call_skew_router
 from app.api.fng import router as fng_router
+from app.api.global_markets import router as global_markets_router
 from app.api.indicators import router as indicators_router
 from app.api.market_prices import router as market_prices_router
 from app.api.panic_strategy import router as panic_strategy_router
@@ -39,6 +40,7 @@ app.add_middleware(
 app.include_router(breadth_router)
 app.include_router(call_skew_router)
 app.include_router(fng_router)
+app.include_router(global_markets_router)
 app.include_router(vix_router)
 app.include_router(indicators_router)
 app.include_router(market_prices_router)

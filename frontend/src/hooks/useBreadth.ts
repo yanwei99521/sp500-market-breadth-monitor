@@ -8,6 +8,7 @@ import type {
   DailyStatusResponse,
   FngCurrent,
   FngPoint,
+  GlobalMarketsResponse,
   MaPeriod,
   MarketPricePoint,
   MarketPriceTicker,
@@ -311,6 +312,40 @@ export function useMarketPriceHistory(ticker: MarketPriceTicker, range: TimeRang
         setLoading(false);
       });
   }, [ticker, range]);
+
+  return { data, loading, error };
+}
+
+export function useGlobalMarketQuotes() {
+  const [data, setData] = useState<GlobalMarketsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = () => {
+      fetchJson<GlobalMarketsResponse>(`${BASE}/global-markets/quotes`)
+        .then((result) => {
+          if (!active) return;
+          setData(result);
+          setError(null);
+        })
+        .catch((err: unknown) => {
+          if (active) setError(String(err));
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    load();
+    const timer = window.setInterval(load, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return { data, loading, error };
 }

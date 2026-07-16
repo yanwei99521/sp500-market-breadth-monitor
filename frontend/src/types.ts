@@ -101,6 +101,22 @@ export interface MarketPricePoint {
   close: number;
 }
 
+export interface GlobalMarketQuote {
+  id: string;
+  region: string;
+  name: string;
+  symbol: string;
+  price: number;
+  change: number;
+  change_pct: number;
+  quote_date: string;
+}
+
+export interface GlobalMarketsResponse {
+  updated_at: string;
+  quotes: GlobalMarketQuote[];
+}
+
 export interface PanicAllocation {
   qqq: number;
   tqqq: number;
