@@ -11,6 +11,7 @@ import type {
   GlobalMarketsResponse,
   MaPeriod,
   MarketPricePoint,
+  MarketPriceSnapshot,
   MarketPriceTicker,
   MarketRule,
   PanicBacktestResponse,
@@ -312,6 +313,40 @@ export function useMarketPriceHistory(ticker: MarketPriceTicker, range: TimeRang
         setLoading(false);
       });
   }, [ticker, range]);
+
+  return { data, loading, error };
+}
+
+export function useMarketPriceSnapshots() {
+  const [data, setData] = useState<MarketPriceSnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = () => {
+      fetchJson<MarketPriceSnapshot[]>(`${BASE}/market-prices/snapshots`)
+        .then((result) => {
+          if (!active) return;
+          setData(result);
+          setError(null);
+        })
+        .catch((err: unknown) => {
+          if (active) setError(String(err));
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    load();
+    const timer = window.setInterval(load, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return { data, loading, error };
 }

@@ -90,7 +90,7 @@ export interface QqqDrawdownPoint {
   return_25d: number | null;
 }
 
-export type MarketPriceTicker = "QQQ" | "SPY" | "SOXL";
+export type MarketPriceTicker = "QQQ" | "SPY" | "SOXL" | "TQQQ";
 
 export interface MarketPricePoint {
   ticker: MarketPriceTicker;
@@ -99,6 +99,25 @@ export interface MarketPricePoint {
   high: number;
   low: number;
   close: number;
+}
+
+export type MarketTrendState = "strong" | "watch" | "defensive" | "insufficient_data";
+
+export interface MarketPriceSnapshot {
+  ticker: MarketPriceTicker;
+  date: string;
+  close: number;
+  change_pct: number;
+  ma55: number | null;
+  ma233: number | null;
+  macd: number;
+  macd_signal: number;
+  macd_histogram: number;
+  macd_cross: "bullish" | "bearish" | "none";
+  macd_panic_buy: boolean;
+  td_direction: "buy" | "sell" | null;
+  td_count: number;
+  trend_state: MarketTrendState;
 }
 
 export interface GlobalMarketQuote {

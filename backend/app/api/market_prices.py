@@ -41,3 +41,9 @@ def get_price_history(
         }
         for row in rows
     ]
+
+
+@router.get("/snapshots")
+def get_price_snapshots():
+    """Return latest SOXL, QQQ and TQQQ prices plus compact technical state."""
+    return market_prices.snapshots()

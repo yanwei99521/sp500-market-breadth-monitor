@@ -1,117 +1,43 @@
-import { INDICATORS } from "../config/indicators";
-import DailyStatusTable from "../components/DailyStatusTable";
-import IndicatorCard from "../components/IndicatorCard";
+import { Link } from "react-router-dom";
 import GlobalMarketTicker from "../components/GlobalMarketTicker";
 import MarketPriceChartPanel from "../components/MarketPriceChartPanel";
-import MarketRulesSection from "../components/MarketRulesSection";
-import SentimentCard from "../components/SentimentCard";
-import ThreeSignalPanel from "../components/ThreeSignalPanel";
-import PanicStrategyPanel from "../components/PanicStrategyPanel";
+import TradingDecisionPanel from "../components/TradingDecisionPanel";
 import { useIndicatorsOverview } from "../hooks/useBreadth";
-import type { IndicatorOverview } from "../types/indicator";
 
 export default function DashboardPage() {
   const { data: overview, loading, error } = useIndicatorsOverview();
 
-  // Map overview by id for easy lookup
-  const overviewMap = new Map<string, IndicatorOverview>(
-    overview.map((o) => [o.id, o]),
-  );
-
-  // Separate sentiment (VIX, F&G) from regular indicators
-  const sentimentConfigs = INDICATORS.filter((c) => c.isSentiment);
-  const regularConfigs = INDICATORS.filter((c) => !c.isSentiment);
-
-  // Check if multiple buy signals are simultaneously active (regular indicators only)
-  const activeBuySignals = overview.filter(
-    (o) => o.type === "buy" && o.zone === "active",
-  );
-  const dualConfirmed = activeBuySignals.length >= 2;
-
-  const skeletonCard = (
-    <div className="rounded-xl border-2 border-zinc-200 bg-white p-5 animate-pulse">
-      <div className="h-3 bg-zinc-200 rounded w-16 mb-4" />
-      <div className="h-10 bg-zinc-200 rounded w-24 mb-3" />
-      <div className="h-3 bg-zinc-200 rounded w-32" />
-    </div>
-  );
-
   return (
-    <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-      {/* Error */}
+    <main className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
       {error && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-lg px-4 py-3 text-sm">
-          ⚠ 数据尚未初始化。请先运行：
-          <code className="ml-2 bg-yellow-100 px-2 py-0.5 rounded font-mono">
-            cd backend && uv run python init_data.py
-          </code>
+        <div className="border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+          市场指标暂不可用，请稍后重试或前往后台检查数据更新。
         </div>
       )}
 
       <GlobalMarketTicker />
 
-      {/* Sentiment indicators (VIX + F&G) — top row */}
-      <section>
-        <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">
-          情绪指标
-        </h2>
+      <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,0.8fr)]">
+        <MarketPriceChartPanel />
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {sentimentConfigs.map((c) => <div key={c.id}>{skeletonCard}</div>)}
-          </div>
+          <div className="h-[620px] animate-pulse rounded-lg border border-zinc-200 bg-white" />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {sentimentConfigs.map((config) => {
-              const ov = overviewMap.get(config.id);
-              if (!ov) return null;
-              return <SentimentCard key={config.id} config={config} overview={ov} />;
-            })}
-          </div>
+          <TradingDecisionPanel overview={overview} />
         )}
       </section>
 
-      <MarketPriceChartPanel />
-
-      <ThreeSignalPanel />
-
-      <PanicStrategyPanel />
-
-      {/* Dual confirmation banner */}
-      {dualConfirmed && (
-        <div className="bg-green-50 border border-green-400 rounded-lg px-4 py-3 text-sm text-green-800">
-          <strong>双重确认信号：</strong>MA50 与 MA200 宽度同时进入买入区间，历史上最强买入信号。
+      <section className="flex flex-col gap-3 border-t border-zinc-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-800">研究中心</h2>
+          <p className="mt-1 text-xs text-zinc-500">查看完整指标、策略回测、每日状态和市场规律。</p>
         </div>
-      )}
-
-      {/* Regular indicator grid */}
-      <section>
-        <h2 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">
-          市场宽度 & 衍生指标
-        </h2>
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {regularConfigs.map((c) => <div key={c.id}>{skeletonCard}</div>)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {regularConfigs.map((config) => {
-              const ov = overviewMap.get(config.id);
-              if (!ov) return null;
-              return <IndicatorCard key={config.id} config={config} overview={ov} />;
-            })}
-          </div>
-        )}
+        <Link to="/research" className="text-xs font-semibold text-blue-600 hover:text-blue-700">
+          打开研究中心 →
+        </Link>
       </section>
 
-      {/* Global daily status table */}
-      <DailyStatusTable />
-
-      {/* Market Rules */}
-      <MarketRulesSection />
-
-      {/* Footer */}
-      <footer className="text-xs text-zinc-400 text-center pb-4">
-        点击指标卡片查看详细历史图表与信号记录
+      <footer className="pb-2 text-center text-xs text-zinc-400">
+        数据按日线模型更新；行情数据可能存在延迟。
       </footer>
     </main>
   );

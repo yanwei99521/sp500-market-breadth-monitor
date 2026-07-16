@@ -17,7 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMarketPriceHistory } from "../hooks/useBreadth";
 import type { MarketPriceTicker, TimeRange } from "../types";
 
-const TICKERS: MarketPriceTicker[] = ["QQQ", "SPY", "SOXL"];
+const TICKERS: MarketPriceTicker[] = ["SOXL", "QQQ", "TQQQ"];
 const RANGES: TimeRange[] = ["1m", "3m", "6m", "1y", "3y", "all"];
 const MOVING_AVERAGES = [
   { window: 5, label: "MA5", color: "#dc2626" },
@@ -31,6 +31,7 @@ const TICKER_LABEL: Record<MarketPriceTicker, string> = {
   QQQ: "纳指100",
   SPY: "标普500",
   SOXL: "半导体3倍",
+  TQQQ: "纳指3倍",
 };
 
 function formatPercent(value: number | null): string {
@@ -197,7 +198,7 @@ function calculateTdSequential(data: { date: string; close: number }[]): SeriesM
 }
 
 export default function MarketPriceChartPanel() {
-  const [ticker, setTicker] = useState<MarketPriceTicker>("QQQ");
+  const [ticker, setTicker] = useState<MarketPriceTicker>("SOXL");
   const [range, setRange] = useState<TimeRange>("1y");
   const { data: fullData, loading, error } = useMarketPriceHistory(ticker, "all");
   const containerRef = useRef<HTMLDivElement>(null);
